@@ -1,171 +1,147 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tic-Tac-Toe</title>
-    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tic-Tac-Toe</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
 </head>
-
 <body>
-    <div class="container">
+<div class="container">
 
-        <header>
-            <h1>Tic-Tac-Toe</h1>
-            <p>
-                <span class="conn-dot" id="conn-dot"></span>
-                <span id="conn-label">offline</span>
-            </p>
-        </header>
+  <header>
+    <h1>Tic-Tac-Toe</h1>
+    <p>
+      <span class="conn-dot" id="conn-dot"></span>
+      <span id="conn-label">offline</span>
+    </p>
+  </header>
 
-        <!-- ══ SCREEN 1: Mode Select ══════════════════════════════════════════ -->
-        <div class="screen active" id="screen-mode">
-            <div class="mode-buttons">
-                <button class="mode-btn vs-human" onclick="selectMode('local2p')">⚔ Local 2-Player</button>
-                <button class="mode-btn vs-ai" onclick="selectMode('ai')">🤖 Vs AI</button>
-                <button class="mode-btn online" onclick="showScreen('screen-online')">🌐 Online</button>
-            </div>
+  <!-- SCREEN 1: Mode Select -->
+  <div class="screen active" id="screen-mode">
+    <div class="mode-buttons">
+      <button class="mode-btn vs-human" id="btn-mode-local">⚔ Local 2-Player</button>
+      <button class="mode-btn vs-ai"    id="btn-mode-ai">🤖 Vs AI</button>
+      <button class="mode-btn online"   id="btn-mode-online">🌐 Online</button>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: Local / AI Setup -->
+  <div class="screen" id="screen-setup">
+    <div class="input-group">
+      <label>Player 1 Name (X)</label>
+      <input type="text" id="name1" placeholder="Enter name" maxlength="14">
+    </div>
+    <div class="input-group">
+      <label id="name2-label">Player 2 Name (O)</label>
+      <input type="text" id="name2" placeholder="Enter name" maxlength="14">
+    </div>
+    <div class="order-group" id="order-group" style="display:none">
+      <label>Who goes first?</label>
+      <div class="order-options">
+        <button class="order-btn selected" id="order-first">You (X)</button>
+        <button class="order-btn"          id="order-second">AI (O)</button>
+      </div>
+    </div>
+    <button class="start-btn" id="btn-start-local">START GAME</button>
+    <button class="back-btn"  id="btn-back-setup">← back</button>
+  </div>
+
+  <!-- SCREEN 3: Online Lobby -->
+  <div class="screen" id="screen-online">
+    <div class="lobby-box">
+      <h2>Online Multiplayer</h2>
+      <div class="input-group" style="width:100%">
+        <label>Your Name</label>
+        <input type="text" id="online-name" placeholder="Enter name" maxlength="14">
+      </div>
+      <hr class="lobby-divider">
+      <button class="start-btn" id="btn-create-room" style="width:100%;margin-top:0">+ Create Room</button>
+      <hr class="lobby-divider">
+      <div class="join-row">
+        <input type="text" id="join-code" placeholder="ROOM CODE" maxlength="6">
+        <button class="join-btn" id="btn-join-room">Join</button>
+      </div>
+      <div id="lobby-error" style="font-size:0.65rem;color:var(--x-color);letter-spacing:0.12em;min-height:16px;text-align:center"></div>
+    </div>
+    <button class="back-btn" id="btn-back-online">← back</button>
+  </div>
+
+  <!-- SCREEN 4: Waiting for opponent -->
+  <div class="screen" id="screen-waiting">
+    <div class="lobby-box" style="align-items:center;text-align:center">
+      <h2>Room Created!</h2>
+      <p style="font-size:0.68rem;color:var(--muted);letter-spacing:0.1em">Share this code with your friend</p>
+      <div class="room-code-display" id="waiting-code">
+        ——
+        <span class="copy-hint">click to copy</span>
+      </div>
+      <div class="lobby-status waiting" id="waiting-status">Waiting for opponent...</div>
+    </div>
+    <button class="back-btn" id="btn-leave-room">← leave room</button>
+  </div>
+
+  <!-- SCREEN 5: Game -->
+  <div class="screen" id="screen-game">
+    <div class="game-info">
+      <div class="player-card x-card" id="card-x">
+        <div class="symbol">X</div>
+        <div class="pname" id="name-x">Player 1</div>
+        <div class="score" id="score-x">0</div>
+      </div>
+      <div class="vs-badge">VS</div>
+      <div class="player-card o-card" id="card-o">
+        <div class="symbol">O</div>
+        <div class="pname" id="name-o">Player 2</div>
+        <div class="score" id="score-o">0</div>
+      </div>
+    </div>
+
+    <div class="spectator-bar" id="spectator-bar">👁 Spectating</div>
+    <div class="thinking" id="thinking-indicator">AI THINKING...</div>
+
+    <div class="game-layout">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
+        <div class="board" id="board">
+          <div class="cell" data-idx="0"></div>
+          <div class="cell" data-idx="1"></div>
+          <div class="cell" data-idx="2"></div>
+          <div class="cell" data-idx="3"></div>
+          <div class="cell" data-idx="4"></div>
+          <div class="cell" data-idx="5"></div>
+          <div class="cell" data-idx="6"></div>
+          <div class="cell" data-idx="7"></div>
+          <div class="cell" data-idx="8"></div>
         </div>
 
-        <!-- ══ SCREEN 2: Local / AI Setup ════════════════════════════════════ -->
-        <div class="screen" id="screen-setup">
-            <div class="input-group">
-                <label>Player 1 Name (X)</label>
-                <input type="text" id="name1" placeholder="Enter name" maxlength="14">
-            </div>
-            <div class="input-group">
-                <label id="name2-label">Player 2 Name (O)</label>
-                <input type="text" id="name2" placeholder="Enter name" maxlength="14">
-            </div>
-            <div class="order-group" id="order-group" style="display:none">
-                <label>Who goes first?</label>
-                <div class="order-options">
-                    <button class="order-btn selected" id="order-first" onclick="selectOrder(1)">You (X)</button>
-                    <button class="order-btn" id="order-second" onclick="selectOrder(2)">AI (O)</button>
-                </div>
-            </div>
-            <button class="start-btn" onclick="startLocalGame()">START GAME</button>
-            <button class="back-btn" onclick="goHome()">← back</button>
+        <div class="status-bar" id="status-bar">Choose a cell to begin</div>
+        <div class="rematch-banner" id="rematch-banner"></div>
+
+        <div class="game-actions">
+          <button class="action-btn primary" id="btn-new-round" style="display:none">New Round</button>
+          <button class="action-btn primary" id="btn-rematch"   style="display:none">Rematch</button>
+          <button class="action-btn"         id="btn-menu">Main Menu</button>
         </div>
+      </div>
 
-        <!-- ══ SCREEN 3: Online Lobby ════════════════════════════════════════ -->
-        <div class="screen" id="screen-online">
-            <div class="lobby-box">
-                <h2>Online Multiplayer</h2>
-
-                <!-- Your name -->
-                <div class="input-group" style="width:100%">
-                    <label>Your Name</label>
-                    <input type="text" id="online-name" placeholder="Enter name" maxlength="14">
-                </div>
-
-                <hr class="lobby-divider">
-
-                <!-- Create -->
-                <button class="start-btn" style="width:100%;margin-top:0" onclick="createRoom()">+ Create Room</button>
-
-                <hr class="lobby-divider">
-
-                <!-- Join -->
-                <div class="join-row">
-                    <input type="text" id="join-code" placeholder="ROOM CODE" maxlength="6">
-                    <button class="join-btn" onclick="joinRoom()">Join</button>
-                </div>
-
-                <div id="lobby-error"
-                    style="font-size:0.65rem;color:var(--x-color);letter-spacing:0.12em;min-height:16px;text-align:center">
-                </div>
-            </div>
-            <button class="back-btn" onclick="goHome()">← back</button>
+      <div class="chat-panel" id="chat-panel" style="display:none">
+        <div class="chat-header">
+          <span class="chat-dot"></span> Live Chat
         </div>
-
-        <!-- ══ SCREEN 4: Waiting for opponent ════════════════════════════════ -->
-        <div class="screen" id="screen-waiting">
-            <div class="lobby-box" style="align-items:center;text-align:center">
-                <h2>Room Created!</h2>
-                <p style="font-size:0.68rem;color:var(--muted);letter-spacing:0.1em">Share this code with your friend
-                </p>
-                <div class="room-code-display" id="waiting-code" onclick="copyCode()">
-                    ——
-                    <span class="copy-hint">click to copy</span>
-                </div>
-                <div class="lobby-status waiting" id="waiting-status">Waiting for opponent...</div>
-            </div>
-            <button class="back-btn" onclick="leaveRoom()">← leave room</button>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-input" placeholder="Say something..." maxlength="200">
+          <button id="btn-chat-send">Send</button>
         </div>
+      </div>
+    </div>
 
-        <!-- ══ SCREEN 5: Game ════════════════════════════════════════════════ -->
-        <div class="screen" id="screen-game">
+  </div><!-- /screen-game -->
 
-            <div class="game-info">
-                <div class="player-card x-card" id="card-x">
-                    <div class="symbol">X</div>
-                    <div class="pname" id="name-x">Player 1</div>
-                    <div class="score" id="score-x">0</div>
-                </div>
-                <div class="vs-badge">VS</div>
-                <div class="player-card o-card" id="card-o">
-                    <div class="symbol">O</div>
-                    <div class="pname" id="name-o">Player 2</div>
-                    <div class="score" id="score-o">0</div>
-                </div>
-            </div>
+</div><!-- /container -->
 
-            <div class="spectator-bar" id="spectator-bar">👁 Spectating</div>
-            <div class="thinking" id="thinking-indicator">AI THINKING...</div>
-
-            <!-- Board + Chat side-by-side -->
-            <div class="game-layout">
-                <div style="display:flex;flex-direction:column;align-items:center;gap:10px">
-                    <div class="board" id="board">
-                        <div class="cell" data-idx="0" onclick="cellClick(0)"></div>
-                        <div class="cell" data-idx="1" onclick="cellClick(1)"></div>
-                        <div class="cell" data-idx="2" onclick="cellClick(2)"></div>
-                        <div class="cell" data-idx="3" onclick="cellClick(3)"></div>
-                        <div class="cell" data-idx="4" onclick="cellClick(4)"></div>
-                        <div class="cell" data-idx="5" onclick="cellClick(5)"></div>
-                        <div class="cell" data-idx="6" onclick="cellClick(6)"></div>
-                        <div class="cell" data-idx="7" onclick="cellClick(7)"></div>
-                        <div class="cell" data-idx="8" onclick="cellClick(8)"></div>
-                    </div>
-
-                    <div class="status-bar" id="status-bar">Choose a cell to begin</div>
-                    <div class="rematch-banner" id="rematch-banner"></div>
-
-                    <div class="game-actions">
-                        <!-- local modes -->
-                        <button class="action-btn primary" id="btn-new-round" onclick="resetLocalBoard()"
-                            style="display:none">New Round</button>
-                        <!-- online mode -->
-                        <button class="action-btn primary" id="btn-rematch" onclick="voteRematch()"
-                            style="display:none">Rematch</button>
-                        <button class="action-btn" id="btn-menu" onclick="goHome()">Main Menu</button>
-                    </div>
-                </div>
-
-                <!-- Chat (only shown in online mode) -->
-                <div class="chat-panel" id="chat-panel" style="display:none">
-                    <div class="chat-header">
-                        <span class="chat-dot"></span> Live Chat
-                    </div>
-                    <div class="chat-messages" id="chat-messages"></div>
-                    <div class="chat-input-row">
-                        <input type="text" id="chat-input" placeholder="Say something..." maxlength="200"
-                            onkeydown="if(event.key==='Enter') sendChat()">
-                        <button onclick="sendChat()">Send</button>
-                    </div>
-                </div>
-            </div>
-
-        </div><!-- /screen-game -->
-
-    </div><!-- /container -->
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="/game.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="/game.js"></script>
 </body>
-
 </html>
