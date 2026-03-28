@@ -11,7 +11,11 @@ const io = new Server(server, {
 });
 
 // ── Serve static frontend files from /public ──────────────────────────────
-app.use(express.static(path.join(__dirname, 'public')));
+const PUBLIC_DIR = path.join(__dirname, 'public');
+app.use(express.static(PUBLIC_DIR));
+
+// Catch-all: send index.html for any unmatched GET (fixes Render deep-link 404s)
+app.get('*', (_req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
 
 // ── Room store ────────────────────────────────────────────────────────────
 // rooms[code] = {
