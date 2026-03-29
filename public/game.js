@@ -6,12 +6,13 @@ const WIN_LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,
 // ═══════════════════════════════════════════════════════════════
 //  LOCAL GAME STATE
 // ═══════════════════════════════════════════════════════════════
-let mode        = '';
-let board       = [];
-let currentP    = -1;    // -1=X, 1=O
-let gameOver    = false;
-let playerOrder = 1;
-let localScores = { x: 0, o: 0 };
+let mode         = '';
+let board        = [];
+let currentP     = -1;    // -1=X, 1=O
+let gameOver     = false;
+let playerOrder  = 1;     // 1=player first, 2=AI first
+let playerSymbol = 'X';   // 'X' or 'O' — what the human chose
+let localScores  = { x: 0, o: 0 };
 
 // ═══════════════════════════════════════════════════════════════
 //  ONLINE STATE
@@ -186,11 +187,26 @@ function goHome() {
 function selectMode(m) {
   mode = m;
   const isAI = (m === 'ai');
-  document.getElementById('name2-label').textContent       = isAI ? 'AI Name (O)' : 'Player 2 Name (O)';
+  // Name labels — for local 2p show both; for AI show player name only
+  document.getElementById('name1-label').textContent       = isAI ? 'Your Name' : 'Player 1 Name (X)';
+  document.getElementById('name2-label').textContent       = 'AI Name';
+  document.getElementById('name2-group').style.display     = isAI ? 'flex' : 'flex';
   document.getElementById('name2').value                   = isAI ? 'HAL-9000' : '';
   document.getElementById('name2').readOnly                = isAI;
+  document.getElementById('symbol-group').style.display   = isAI ? 'flex' : 'none';
   document.getElementById('order-group').style.display     = isAI ? 'flex' : 'none';
+  // Reset symbol to X default
+  selectSymbol('X');
   showScreen('screen-setup');
+}
+
+function selectSymbol(sym) {
+  playerSymbol = sym;
+  document.getElementById('symbol-x').classList.toggle('selected', sym === 'X');
+  document.getElementById('symbol-o').classList.toggle('selected', sym === 'O');
+  // Update order buttons to reflect chosen symbol
+  document.getElementById('order-first').textContent  = `You (${sym})`;
+  document.getElementById('order-second').textContent = `AI (${sym === 'X' ? 'O' : 'X'})`;
 }
 
 function selectOrder(o) {
@@ -206,8 +222,22 @@ function startLocalGame() {
   const n1 = document.getElementById('name1').value.trim() || 'Player 1';
   const n2 = document.getElementById('name2').value.trim() || (mode === 'ai' ? 'HAL-9000' : 'Player 2');
 
-  document.getElementById('name-x').textContent  = n1;
-  document.getElementById('name-o').textContent  = n2;
+  // In AI mode, assign names based on chosen symbol
+  if (mode === 'ai') {
+    const aiName = n2;
+    const playerName = n1;
+    if (playerSymbol === 'X') {
+      document.getElementById('name-x').textContent = playerName;
+      document.getElementById('name-o').textContent = aiName;
+    } else {
+      document.getElementById('name-x').textContent = aiName;
+      document.getElementById('name-o').textContent = playerName;
+    }
+  } else {
+    document.getElementById('name-x').textContent = n1;
+    document.getElementById('name-o').textContent = n2;
+  }
+
   document.getElementById('score-x').textContent = localScores.x;
   document.getElementById('score-o').textContent = localScores.o;
 
@@ -224,13 +254,30 @@ function startLocalGame() {
 function resetLocalBoard() {
   board    = [0,0,0,0,0,0,0,0,0];
   gameOver = false;
-  // If AI goes first (playerOrder=2), AI is X (-1); player is O (1)
-  // If player goes first (playerOrder=1), player is X (-1); AI is O (1)
-  currentP = -1; // X always moves first
+  currentP = -1; // X always moves first internally
   renderBoard();
   setStatus('');
   updateActiveCard();
-  if (mode === 'ai' && playerOrder === 2) setTimeout(doAITurn, 400);
+  if (mode === 'ai') {
+    // playerSymbol: what the human picked ('X' or 'O')
+    // playerOrder : 1=human first, 2=AI first
+    //
+    // Derive whether AI moves first this turn:
+    //   human chose X + goes first  → human is X, AI is O → AI does NOT go first
+    //   human chose X + AI goes first → AI must play X's turn... but X goes first, contradiction.
+    //     In this case AI is still O but human gave up first move → AI plays after human's phantom? No —
+    //     "order" means who physically clicks first. If player chose X and said AI first, we swap:
+    //     AI becomes X and plays first; player becomes O.
+    //   human chose O + player first → player is O, AI is X → AI must play first (X goes first)
+    //   human chose O + AI first     → same result, AI (X) goes first
+    //
+    // Simplified rule:
+    //   aiValue = playerSymbol === 'X' ? 1 : -1
+    //   aiGoesFirst = (aiValue === -1) OR (playerOrder === 2)
+    const aiValue   = (playerSymbol === 'X') ? 1 : -1;  // AI gets opposite of player
+    const aiGoesFirst = (aiValue === -1) || (playerOrder === 2);
+    if (aiGoesFirst) setTimeout(doAITurn, 400);
+  }
 }
 
 function cellClick(idx) {
@@ -243,8 +290,8 @@ function cellClick(idx) {
     return;
   }
 
-  // playerOrder=1 → player is X (-1); playerOrder=2 → player is O (1)
-  const playerValue = (playerOrder === 1) ? -1 : 1;
+  // Block click when it's not the human's turn
+  const playerValue = (playerSymbol === 'X') ? -1 : 1;
   if (mode === 'ai' && currentP !== playerValue) return;
 
   board[idx] = currentP;
@@ -259,7 +306,8 @@ function checkLocalEndTurn() {
   currentP *= -1;
   updateActiveCard();
   setStatus(localTurnLabel());
-  if (mode === 'ai' && currentP === 1) setTimeout(doAITurn, 350);
+  const aiVal = (playerSymbol === 'X') ? 1 : -1;
+  if (mode === 'ai' && currentP === aiVal) setTimeout(doAITurn, 350);
 }
 
 function endLocalGame(result) {
@@ -325,8 +373,8 @@ function compBestMove(b, aiValue) {
 
 function doAITurn() {
   if (gameOver) return;
-  // AI is X (-1) when playerOrder=2, O (1) when playerOrder=1
-  const aiValue = (playerOrder === 2) ? -1 : 1;
+  // AI always gets the opposite symbol to what the player chose
+  const aiValue = (playerSymbol === 'X') ? 1 : -1;
   setThinking(true);
   setTimeout(() => {
     const pos = compBestMove(board, aiValue);
