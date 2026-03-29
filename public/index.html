@@ -30,18 +30,27 @@
   <!-- SCREEN 2: Local / AI Setup -->
   <div class="screen" id="screen-setup">
     <div class="input-group">
-      <label>Player 1 Name (X)</label>
+      <label id="name1-label">Player 1 Name</label>
       <input type="text" id="name1" placeholder="Enter name" maxlength="14">
     </div>
-    <div class="input-group">
-      <label id="name2-label">Player 2 Name (O)</label>
+    <div class="input-group" id="name2-group">
+      <label id="name2-label">Player 2 Name</label>
       <input type="text" id="name2" placeholder="Enter name" maxlength="14">
     </div>
+    <!-- Symbol picker (AI mode only) -->
+    <div class="order-group" id="symbol-group" style="display:none">
+      <label>Choose your symbol</label>
+      <div class="order-options">
+        <button class="order-btn symbol-btn selected" id="symbol-x">✕ &nbsp;X</button>
+        <button class="order-btn symbol-btn"          id="symbol-o">○ &nbsp;O</button>
+      </div>
+    </div>
+    <!-- Who goes first (AI mode only) -->
     <div class="order-group" id="order-group" style="display:none">
       <label>Who goes first?</label>
       <div class="order-options">
-        <button class="order-btn selected" id="order-first">You (X)</button>
-        <button class="order-btn"          id="order-second">AI (O)</button>
+        <button class="order-btn selected" id="order-first">You</button>
+        <button class="order-btn"          id="order-second">AI</button>
       </div>
     </div>
     <button class="start-btn" id="btn-start-local">START GAME</button>
