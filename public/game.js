@@ -26,49 +26,48 @@ let rematchVoted = false;
 // ═══════════════════════════════════════════════════════════════
 //  BOOT — wire up every event listener after DOM is ready
 // ═══════════════════════════════════════════════════════════════
-document.addEventListener('DOMContentLoaded', () => {
+// Wire up all event listeners (script is at end of body so DOM is already ready)
 
-  // ── Mode select ──────────────────────────────────────────────
-  document.getElementById('btn-mode-local').addEventListener('click', () => selectMode('local2p'));
-  document.getElementById('btn-mode-ai').addEventListener('click',    () => selectMode('ai'));
-  document.getElementById('btn-mode-online').addEventListener('click', () => showScreen('screen-online'));
+// ── Mode select ──────────────────────────────────────────────
+document.getElementById('btn-mode-local').addEventListener('click', () => selectMode('local2p'));
+document.getElementById('btn-mode-ai').addEventListener('click',    () => selectMode('ai'));
+document.getElementById('btn-mode-online').addEventListener('click', () => showScreen('screen-online'));
 
-  // ── Setup screen ─────────────────────────────────────────────
-  document.getElementById('btn-start-local').addEventListener('click', startLocalGame);
-  document.getElementById('btn-back-setup').addEventListener('click',  goHome);
-  document.getElementById('order-first').addEventListener('click',     () => selectOrder(1));
-  document.getElementById('order-second').addEventListener('click',    () => selectOrder(2));
+// ── Setup screen ─────────────────────────────────────────────
+document.getElementById('btn-start-local').addEventListener('click', startLocalGame);
+document.getElementById('btn-back-setup').addEventListener('click',  goHome);
+document.getElementById('order-first').addEventListener('click',     () => selectOrder(1));
+document.getElementById('order-second').addEventListener('click',    () => selectOrder(2));
 
-  // ── Online lobby ─────────────────────────────────────────────
-  document.getElementById('btn-back-online').addEventListener('click',  goHome);
-  document.getElementById('btn-create-room').addEventListener('click',  createRoom);
-  document.getElementById('btn-join-room').addEventListener('click',    joinRoom);
-  document.getElementById('join-code').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') joinRoom();
+// ── Online lobby ─────────────────────────────────────────────
+document.getElementById('btn-back-online').addEventListener('click',  goHome);
+document.getElementById('btn-create-room').addEventListener('click',  createRoom);
+document.getElementById('btn-join-room').addEventListener('click',    joinRoom);
+document.getElementById('join-code').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') joinRoom();
+});
+
+// ── Waiting screen ───────────────────────────────────────────
+document.getElementById('btn-leave-room').addEventListener('click',  leaveRoom);
+document.getElementById('waiting-code').addEventListener('click',    copyCode);
+
+// ── Game screen ──────────────────────────────────────────────
+document.getElementById('btn-new-round').addEventListener('click', resetLocalBoard);
+document.getElementById('btn-rematch').addEventListener('click',   voteRematch);
+document.getElementById('btn-menu').addEventListener('click',      goHome);
+
+// ── Board cells ──────────────────────────────────────────────
+document.querySelectorAll('.cell').forEach((cell) => {
+  cell.addEventListener('click', () => {
+    const idx = parseInt(cell.getAttribute('data-idx'), 10);
+    cellClick(idx);
   });
+});
 
-  // ── Waiting screen ───────────────────────────────────────────
-  document.getElementById('btn-leave-room').addEventListener('click',  leaveRoom);
-  document.getElementById('waiting-code').addEventListener('click',    copyCode);
-
-  // ── Game screen ──────────────────────────────────────────────
-  document.getElementById('btn-new-round').addEventListener('click', resetLocalBoard);
-  document.getElementById('btn-rematch').addEventListener('click',   voteRematch);
-  document.getElementById('btn-menu').addEventListener('click',      goHome);
-
-  // ── Board cells ──────────────────────────────────────────────
-  document.querySelectorAll('.cell').forEach((cell) => {
-    cell.addEventListener('click', () => {
-      const idx = parseInt(cell.getAttribute('data-idx'), 10);
-      cellClick(idx);
-    });
-  });
-
-  // ── Chat ─────────────────────────────────────────────────────
-  document.getElementById('btn-chat-send').addEventListener('click', sendChat);
-  document.getElementById('chat-input').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') sendChat();
-  });
+// ── Chat ─────────────────────────────────────────────────────
+document.getElementById('btn-chat-send').addEventListener('click', sendChat);
+document.getElementById('chat-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendChat();
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -225,7 +224,9 @@ function startLocalGame() {
 function resetLocalBoard() {
   board    = [0,0,0,0,0,0,0,0,0];
   gameOver = false;
-  currentP = -1;
+  // If AI goes first (playerOrder=2), AI is X (-1); player is O (1)
+  // If player goes first (playerOrder=1), player is X (-1); AI is O (1)
+  currentP = -1; // X always moves first
   renderBoard();
   setStatus('');
   updateActiveCard();
@@ -242,7 +243,9 @@ function cellClick(idx) {
     return;
   }
 
-  if (mode === 'ai' && currentP !== -1) return;
+  // playerOrder=1 → player is X (-1); playerOrder=2 → player is O (1)
+  const playerValue = (playerOrder === 1) ? -1 : 1;
+  if (mode === 'ai' && currentP !== playerValue) return;
 
   board[idx] = currentP;
   renderCell(idx);
@@ -306,12 +309,13 @@ function minmax(b, player) {
   return pos === -1 ? 0 : value;
 }
 
-function compBestMove(b) {
+function compBestMove(b, aiValue) {
+  const playerValue = aiValue * -1;
   let pos = -1, value = -2;
   for (let i = 0; i < 9; i++) {
     if (b[i] === 0) {
-      b[i] = 1;
-      const score = -minmax(b, -1);
+      b[i] = aiValue;
+      const score = -minmax(b, playerValue);
       b[i] = 0;
       if (score > value) { value = score; pos = i; }
     }
@@ -321,10 +325,12 @@ function compBestMove(b) {
 
 function doAITurn() {
   if (gameOver) return;
+  // AI is X (-1) when playerOrder=2, O (1) when playerOrder=1
+  const aiValue = (playerOrder === 2) ? -1 : 1;
   setThinking(true);
   setTimeout(() => {
-    const pos = compBestMove(board);
-    if (pos !== -1) { board[pos] = 1; renderCell(pos); }
+    const pos = compBestMove(board, aiValue);
+    if (pos !== -1) { board[pos] = aiValue; renderCell(pos); }
     setThinking(false);
     checkLocalEndTurn();
   }, 300);
